@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 load_dotenv()
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
-import torch
+#import torch
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import SystemMessage, HumanMessage
 
@@ -22,7 +22,7 @@ chat = ChatGoogleGenerativeAI(
     temperature=0.3
 )
 
-torch.set_default_device("cpu")
+#torch.set_default_device("cpu")
 
 with open("pdf_extracted_text.txt", "r", encoding="utf-8") as f:
     text_data = f.read()
@@ -33,16 +33,8 @@ text_splitter = RecursiveCharacterTextSplitter(
 )
 texts = text_splitter.split_text(text_data)
 
-try:
-    embed_model = HuggingFaceEmbeddings(
-        model_name="sentence-transformers/all-MiniLM-L6-v2",
-        model_kwargs={"device": "cuda" if torch.cuda.is_available() else "cpu"}
-    )
-except NotImplementedError:
-    embed_model = HuggingFaceEmbeddings(
-        model_name="sentence-transformers/all-MiniLM-L6-v2",
-        model_kwargs={"device": "cpu"}
-    )
+
+embed_model = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
 index = FAISS.from_texts(texts, embedding=embed_model)
 
