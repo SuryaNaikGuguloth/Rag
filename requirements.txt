@@ -1,0 +1,14 @@
+streamlit
+langchain
+langchain-community
+langchain-core
+langchain-text-splitters
+langchain-google-genai
+google-generativeai
+faiss-cpu
+sentence-transformers
+torch
+numpy
+pandas
+altair
+python-dotenv
