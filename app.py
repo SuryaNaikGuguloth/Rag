@@ -8,7 +8,6 @@ from dotenv import load_dotenv
 load_dotenv()
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
-#import torch
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import SystemMessage, HumanMessage
 
@@ -22,21 +21,31 @@ chat = ChatGoogleGenerativeAI(
     temperature=0.3
 )
 
-#torch.set_default_device("cpu")
+@st.cache_resource
+def load_text():
+    with open("pdf_extracted_text.txt", "r", encoding="utf-8") as f:
+        return f.read()
 
-with open("pdf_extracted_text.txt", "r", encoding="utf-8") as f:
-    text_data = f.read()
+@st.cache_resource
+def split_text(text):
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=1000,
+        chunk_overlap=500
+    )
+    return splitter.split_text(text)
 
-text_splitter = RecursiveCharacterTextSplitter(
-    chunk_size=1000,
-    chunk_overlap=500
-)
-texts = text_splitter.split_text(text_data)
+@st.cache_resource
+def load_embedder():
+    return HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
+@st.cache_resource
+def build_index(texts, embedder):
+    return FAISS.from_texts(texts, embedding=embedder)
 
-embed_model = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-
-index = FAISS.from_texts(texts, embedding=embed_model)
+text_data = load_text()
+texts = split_text(text_data)
+embed_model = load_embedder()
+index = build_index(texts, embed_model)
 
 st.title("🤖 SystemVerilog Documentation Chatbot")
 st.markdown("Ask anything about SystemVerilog Verification based on your document!")
@@ -47,12 +56,13 @@ if "chat_history" not in st.session_state:
 user_query = st.chat_input("Enter your SystemVerilog question...")
 
 if user_query:
-    def retrieve(query, k=10):
-        results = index.similarity_search(query, k=k)
-        context = "\n\n".join([r.page_content for r in results])
-        return context, results
+    def retrieve(q, k=10):
+        docs = index.similarity_search(q, k=k)
+        ctx = "\n\n".join([d.page_content for d in docs])
+        return ctx, docs
 
     context, docs = retrieve(user_query)
+
 
     prompt=f"""
 You are an expert **SystemVerilog Verification Engineer**, **technical author**, and **educator** with over 20 years of experience in digital design and verification.
