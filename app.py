@@ -22,30 +22,24 @@ chat = ChatGoogleGenerativeAI(
 )
 
 @st.cache_resource
-def load_text():
-    with open("pdf_extracted_text.txt", "r", encoding="utf-8") as f:
-        return f.read()
-
-@st.cache_resource
-def split_text(text):
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000,
-        chunk_overlap=500
-    )
-    return splitter.split_text(text)
-
-@st.cache_resource
 def load_embedder():
     return HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
 @st.cache_resource
-def build_index(texts, embedder):
+def load_index():
+    with open("pdf_extracted_text.txt", "r", encoding="utf-8") as f:
+        text_data = f.read()
+
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=1000,
+        chunk_overlap=500
+    )
+    texts = splitter.split_text(text_data)
+
+    embedder = load_embedder()
     return FAISS.from_texts(texts, embedding=embedder)
 
-text_data = load_text()
-texts = split_text(text_data)
-embed_model = load_embedder()
-index = build_index(texts, embed_model)
+index = load_index()
 
 st.title("🤖 SystemVerilog Documentation Chatbot")
 st.markdown("Ask anything about SystemVerilog Verification based on your document!")
